@@ -1,0 +1,85 @@
+# Import file with secret info like user/password transmission
+secrets: secrets.yml
+
+# define templates to use into our tasks
+templates:
+  global:
+    # default config.yml
+    plugin_priority:
+      headers: 250
+    headers:
+      User-Agent: "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:33.0) Gecko/20100101 Firefox/33.0"
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      Accept-Charset: "ISO-8859-1,utf-8;q=0.7,*;q=0.3"
+      Accept-Language: "fr-FR,fr;q=0.8,en-US;q=0.6,en;q=0.4"
+      Cache-Control: "max-age=0"
+      Connection: "keep-alive"
+      Cookie: "uid=94769971; pass=878ef42be543608524be5a98ef1b22e52300619d; authKey=430f8d902a308ef495d0f7a9bb783361"
+      
+    # configuration for pushover
+    # -> each feed will send a notification
+    # read doc: http://flexget.com/wiki/Plugins/pushover
+    pushover:
+      userkey: '{{ secrets.pushover.userkey }}' 
+      apikey:  '{{ secrets.pushover.apikey }}'
+      title: 'Downloading {{series_name}}'
+      message: 'Episode {{series_id}}'
+      priority: 2 #Emergency - accepts Jinja2 tags
+
+  # configuration of transmission
+  # -> each accepted feed item will be piped to transmission
+  # read doc: http://flexget.com/wiki/Plugins/transmission
+  transmissionrpc:
+    transmission:
+      host: localhost
+      port: 9091
+      username: '{{ secrets.transmission.user }}'
+      password: '{{ secrets.transmission.password }}'
+      ratio: -1.0 #infinite ratio
+      addpaused: No
+      # define a path to store our files
+      path: /home/username/directory_to_store_series/
+      main_file_only: yes
+      include_subs: yes
+      skip_files:
+        - '*.nfo'
+        - '*.sfv'
+        - '*.txt'
+
+  # configure anime template, we will need to list our shows or use a plugin like https://github.com/edhaker13/myanimelist
+  anime:
+    # read doc: http://flexget.com/wiki/Plugins/exists_series
+    exists_series:
+      # define a path to store our files
+      path: '/home/username/directory_to_store_series/series/{{series_name}}/'
+      allow_different_qualities: better
+
+    # list animes
+    series:
+      - Heavy Object
+      - Utawarerumono
+    # read doc: http://flexget.com/wiki/Plugins/content_size
+    # We can't use quality to find our animes since some titles don't contain "720p" or 1080p but HD / FHD
+    content_size:
+      min: 200
+    # set path where files will be downloaded
+    set:
+      path: '/home/username/directory_to_store_series/series/{{series_name}}/'
+
+
+# tasks section:
+tasks:
+  nyaa:
+    # define our rss url
+    rss: http://www.nyaa.se/?page=rss&cats=1_37&filter=0&term=horriblesubs
+    no_entries_ok: yes
+    template:
+      - transmissionrpc
+      - anime
+
+# schedules
+# Used to specify interval
+schedules:
+  - tasks: '*'
+    interval:
+      hours: 3
