@@ -78,7 +78,8 @@ tasks:
       - anime
 
 # schedules
-# Used to specify interval
+# Used to specify interval to execute our tasks
+# '*' means every task
 schedules:
   - tasks: '*'
     interval:
